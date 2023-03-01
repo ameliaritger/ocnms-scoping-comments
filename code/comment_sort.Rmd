@@ -1,0 +1,170 @@
+---
+title: "Untitled"
+author: "Amelia Ritger"
+date: "2023-01-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(here)
+library(janitor)
+#library(datapasta) #for use with vector_paste()
+library(tidytext) #to reorder within a group (for ggplot below)
+```
+
+#################
+HOW-TO:
+1. Want to create a subcategory? Put the keywords in quotation marks, separated by commas, and within c().
+
+2. Want to create a main category that is a stand-alone with no subcategories? Do step #1.
+
+3a. Want to create a main category that has multiple subcategories? Put the subcategory names separated by commas within vctrs::vec_c().
+
+3b. Does that main category also have keywords? Do #3a and include each keyword within quotation marks, separated by commas, within vec_c().
+
+Need to see it in action? Check out how Amelia did it below under "Generate categories and input keywords".
+#############
+
+Generate categories and input keywords
+```{r}
+#Partnerships and Coordinated Management
+treaty_trust_responsibility <- c("indigenous", "trib", "makah", "hoh", "quinault", "quileute", "native", "indian", "treaty", "sovereign", "subsist", "harvest")
+collaborative_coordinated <- c("indigenous", "trib", "local", "state", "federal", "international", "canad", "collaborat", "coordinat", "ipc", "govern", "council", "department", "agenc", "navy", "coast guard", "partner", "manage", "jurisdiction", "fisher", "wildlife refuge", "county")
+other_partner <- c("SAC", "advisory council", "MRC", "resource committee", "cooperative", "MOU", "MOA")
+partnerships_coordinated_management <- vctrs::vec_c(treaty_trust_responsibility, collaborative_coordinated, other_partner, "relationship")
+
+#Changing Ocean Conditions
+changing_ocean <- c("climate", "adapt", "long-term", "hypoxi", "acid", "MHW", "OA", "HAB", "bloom", "harm", "heat", "stress", "warm", "mitigat", "quality", "sequest", "carbon", "storm")
+
+#Resource Monitoring and Assessments
+marine_research <- c("intertidal", "tide", "kelp", "seafloor", "deep", "explor", "acoustic", "sound", "research", "nois", "species", "habitat", "ecol", "scien", "biol", "map", "whal", "buoy", "mooring")
+social_science <- c("health", "wellbeing", "econom", "demograph", "resilienc", "household", "justice", "social science", "behav")
+cultural_maritime <- c("maritime", "cultur", "heritage", "archaeolog", "wreck", "ornamental", "sense of place", "regalia", "history")
+resource_monitoring_assessment <- vctrs::vec_c(marine_research, social_science, cultural_maritime, "data", "analy", "shar", "The cloud", "archive", "monitor")
+
+#Compatible Resource Use
+fishing <- c("fish", "crab", "clam", "harvest")
+non_fishing_rec <- c("boat", "motor", "MPWC", "recreat", "touris", "econom", "public access")
+offshore_wind <- c("wind", "turbine", "float", "energy", "renewable")
+other_emergent <- c("energy", "renewable", "optic", "cable", "carbon capture", "desalination", "land use", "development", "deep-sea", "drone")
+compatible_resource_use <- vctrs::vec_c(fishing, non_fishing_rec, offshore_wind, other_emergent, "habitat", "seafloor", "disturb", "oil", "gas", "explor", "trampl", "sink", "ground")
+
+#Wildlife Disturbance
+wildlife_disturbance <- c("disturb", "flush", "strike", "tangle", "motor", "vessel", "military", "navy", "coast guard", "flight", "plane", "drone", "shipping", "acoustic", "sound", "nois nest", "fireworks", "wildlife", "haul out", "trampl")
+
+#Water Quality
+water_quality <- c("spill", "area to be avoided", "ATBA", "marine debris", "trash", "plastic", "garbage", "HAB", "vessel", "exhaust", "gas", "black water", "gray water", "contamin", "waste", "industrial", "runoff", "treatment", "agricultur", "pollut", "sewage", "discharge", "bloom", "water quality", "chemistry")
+
+#Introduced Species
+introduced_sp <- c("invasiv", "introduc", "not native", "green crab", "non-indigenous", "not indigenous", "non-native")
+
+#Education and Outreach
+education_program <- c("educat", "student", "teach", "school", "K-12", "K12", "train", "TPD", "learn", "universit", "college", "BWET", "B-WET")
+visitor_interpret <- c("visit", "tourism", "interpret", "display", "kiosk", "sign", "park", "Cape Flattery")
+education_outreach <- vctrs::vec_c(education_program, visitor_interpret, "outreach", "volunteer", "media", "citizen science", "speaker", "media", "communit", "extension", "engagement", "public", "steward", "website")
+
+#Regulatory/Rulemaking suggestions
+sanctuary_boundary <- c("boundar", "designat", "expan")
+regulatory_rulemaking <- vctrs::vec_c(sanctuary_boundary, "regulat", "rule", "overflight", "military", "navy", "coast guard", "discharge", "cruise", "growler")
+
+#OCNMS Operations and Administration
+operations_admin <- c("staff", "capacity", "infrastructur", "admin", "budget", "facilit", "money", "fund", "office")
+
+#NOAA’s implementation of OCNMS regulations and issuance of permits
+noaa_implementation <- c("enforc", "violat", "complian", "voluntary", "police", "rule", "permit", "consult")
+```
+
+Merge the various comment files
+```{r, message=FALSE}
+#Create a list of all .csv files we have received
+file_names <- list.files(here("data"), pattern = ".csv$", recursive = FALSE, full.names = TRUE)
+
+#Take that list and merge all .csv files into one
+all_merged <- read_csv(file_names, col_names = FALSE) %>%
+  setNames(c("first_name", "last_name", "affiliation", "comment", "additional_notes", "location", "date_received", "notetaker_initials", "document_id", "date_posted", "email", "attachment")) #change column names
+
+#Clean up the dataframe you have just created
+all_merged_clean <- all_merged %>%
+  filter(is.na(document_id) | str_detect(document_id, 'scoping'), #remove headers
+         !is.na(comment)) #remove any rows without a comment
+
+#Delete file_names object because you don't need it anymore
+rm(file_names)
+```
+
+Create a dataframe with all comments
+```{r}
+comm <- all_merged_clean %>%
+  unite("name", "first_name", "last_name", sep=" ", remove=TRUE, na.rm = FALSE) %>% #combine first and last name columns
+  mutate(name = ifelse(str_detect(name, "NA NA"), "Anonymous", name), #replace no name cells with "Anonymous"
+         name = str_replace(name, " NA", "")) %>% #remove NA if last name not provided
+  relocate(c(additional_notes, comment), .after=attachment) #reorder these columns so the for loop below is happy (comments must be at the very end of the dataframe) 
+```
+
+Run the keyword inputs for each category
+
+** Make sure you RESTART R and CLEAR OUTPUT before running the following code each time you make changes to the code or re-run the code, as it uses data from your environment! **
+```{r}
+#Create a list of all the vectors (including their contents)
+vec_list <- Filter(function(x) is(x, "character"), mget(ls()))
+
+#Create a list of all the vector names (excluding their contents)
+vec_names <- Filter(function(x) 'character' %in% class( get(x) ), ls() )
+
+#create a dataframe to fill with the for loop
+comm_all <- comm
+
+### Run through all vectors
+for(i in 1:length(vec_list)){
+  comm_all <- comm_all %>% #iteratively replace the dataframe for each category
+    mutate(!!vec_names[i]:=ifelse(str_detect(comment, paste("(?i)", vec_list[[i]],collapse="|")), "X", "")) #create new column with vector name as the header, fill column with Xs if Comment contains any of the category keywords. (?i) makes str_detect not case sensitive.
+  print(vec_list[i]) #confirm it worked for each iteration
+}
+
+#use browser() within loop for debug
+```
+
+Create a column that lists all categories the comment was binned into, and another column that lists the total number of categories the comment was binned into
+```{r}
+comm_sort <- comm_all %>%
+  mutate(across(changing_ocean:wildlife_disturbance, ~case_when(. != "" ~ cur_column()), .names = 'new_{col}')) %>% #create new columns for each of the categories, where the name of the column is "new + category name" and the contents of the column are filled with the category name
+  unite(categories, starts_with('new'), na.rm = TRUE, sep = ', ') %>% #take all of the contents of each row (excluding NAs) of these new columns you just made and merge them into a single column, where each content (aka the category name) is separated by a comma
+  mutate(num_categories = ifelse(categories=="", 0, 1 + str_count(categories, pattern = ","))) %>% #create a new column that shows the number of categories that comment was binned into by counting the number of commas and adding 1 (since a comma sorted into one category will have no commas)
+  relocate(c(document_id,date_received,date_posted,attachment,name,affiliation,location,email,comment,notetaker_initials,additional_notes,categories,num_categories), .before=changing_ocean) #reorder columns for easy viewing and to reflect CHNMS scoping comment spreadsheet
+
+#Save this first-pass processed comments dataframe to .csv file
+write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
+```
+
+Analyze most popular comment categories by Meeting Location
+```{r}
+comm_popular <- comm_sort %>%
+  rename(full_name=name) %>%
+  mutate(location=replace_na(location,"Comment box")) %>%
+  pivot_longer(cols=c(14:37)) %>%
+  filter(value!="") %>%
+  group_by(location, name) %>%
+  summarize(number_of_comments=n()) %>%
+  top_n(n = 4, wt = number_of_comments) %>%
+  ungroup() %>%
+  arrange(location, desc(number_of_comments))
+
+comm_plot <- comm_popular %>%
+  mutate(name = reorder_within(name, number_of_comments, location),
+         location = fct_relevel(location, c("Pacific Beach","Quinault Tribal Council","Forks","Neah Bay", "Port Angeles", "Virtual", "Comment box"))) #set order of locations
+
+#make it a pretty plot
+ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~location, scales = "free_y") +
+  coord_flip() +
+  scale_x_reordered() +
+  scale_y_continuous(expand = c(0,0)) +
+  labs(y = "Number of comments",
+         x = NULL,
+         title = "Most discussed categories at each public scoping location")
+
+ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
+```
