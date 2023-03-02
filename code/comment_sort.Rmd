@@ -12,6 +12,9 @@ library(here)
 library(janitor)
 #library(datapasta) #for use with vector_paste()
 library(tidytext) #to reorder within a group (for ggplot below)
+library(ggwordcloud) #to create a word cloud
+#install.packages("hunspell")
+#library(hunspell) #for text mining (for word cloud)
 ```
 
 #################
@@ -167,4 +170,88 @@ ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) +
          title = "Most discussed categories at each public scoping location")
 
 ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
+```
+
+Create a wordcloud
+```{r}
+#make the dataframe wordcloud friendly
+comments <- comm_sort %>%
+  select(comment) %>% #remove all columns except comments
+  unnest_tokens(word, comment, to_lower = TRUE) %>% #give every word its own row
+  mutate(word = ifelse(str_detect(word, "angeles"), "port angeles", ifelse(str_detect(word, "neah"), "neah bay", word))) %>%
+  drop_na() %>% #remove NA values
+  anti_join(stop_words) %>% #remove stop words. e.g. view(stop_words)
+  filter(!str_detect(word, "[:digit:]")) %>% #remove numbers
+  mutate(word = case_when(str_detect(word, "washington") ~"washington", #combine words - singular/plural, edit spelling errors where I find them
+                          str_detect(word, "visit") ~"visitation",
+                          str_detect(word, "update") ~"update",
+                          str_detect(word, "tribe") ~"tribe",
+                          str_detect(word, "touri") ~"tourism",
+                          str_detect(word, "student") ~"student",
+                          str_detect(word, "sanctuar") ~"sanctuary",
+                          str_detect(word, "represent") ~"representation",
+                          str_detect(word, "relationship") ~"relationship",
+                          str_detect(word, "recommend") ~"recommendation",
+                          str_detect(word, "program") ~"program",
+                          str_detect(word, "project") ~"project",
+                          str_detect(word, "protect") ~"protect",
+                          str_detect(word, "report") ~"report",
+                          str_detect(word, "requir") ~"requirement",
+                          str_detect(word, "resource") ~"resource",
+                          str_detect(word, "unif") ~"unify",
+                          str_detect(word, "school") ~"school",
+                          str_detect(word, "plan") ~"plan",
+                          str_detect(word, "people") ~"people",
+                          str_detect(word, "partner") ~"partnership",
+                          str_detect(word, "owner") ~"ownership",
+                          str_detect(word, "opportun") ~"opportunity", #overwrite spelling issues
+                          str_detect(word, "mooring") ~"mooring",
+                          str_detect(word, "monitor") ~"monitoring",
+                          str_detect(word, "model") ~"model",
+                          str_detect(word, "manag") ~"management", #overwrite spelling issues
+                          str_detect(word, "location") ~"location",
+                          str_detect(word, "level") ~"level",
+                          str_detect(word, "learn") ~"learn",
+                          str_detect(word, "kiosk") ~"kiosks",
+                          str_detect(word, "issue") ~"issue",
+                          str_detect(word, "interaction") ~"interaction",
+                          str_detect(word, "impact") ~"impact",
+                          str_detect(word, "harvest") ~"harvest",
+                          str_detect(word, "habitat") ~"habitat",
+                          str_detect(word, "guide") ~"guide",
+                          str_detect(word, "department") ~"department",
+                          str_detect(word, "concern") ~"concern",
+                          str_detect(word, "comment") ~"comment",
+                          str_detect(word, "collab") ~"collaboration", #overwrite spelling issues
+                          str_detect(word, "agenc") ~"agency",
+                          str_detect(word, "wind") ~"wind",
+                          str_detect(word, "whale") ~"whale",
+                          str_detect(word, "water") ~"water",
+                          str_detect(word, "vital") ~"vital",
+                          str_detect(word, "underst") ~"understanding", #overwrite spelling issues
+                          str_detect(word, "threat") ~"threats",
+                          str_detect(word, "support") ~"support",
+                          str_detect(word, "resilienc") ~"resilience",
+                          str_detect(word, "priorit") ~"priority", #overwrite spelling issues
+                          str_detect(word, "interpret") ~"interpretation", #overwrite spelling issues
+                          str_detect(word, "indian") ~"indian",
+                          str_detect(word, "engage") ~"engagement", #overwrite spelling issues
+                          TRUE~word))
+    
+comments_top <- comments %>%
+  count(word) %>% #count number of instances each word was mentioned
+  arrange(-n) %>% #decreasing order
+  filter(!word=="e.g") %>% #remove this word from wordcloud
+  head(50) #top n words
+
+#sort(unique(comments$word)) #check your work
+
+# visualize with word cloud
+ggplot(data=comments_top, aes(label=word, size=n)) +
+  geom_text_wordcloud(aes(color=n), shape="circle") +
+  scale_size_area(max_size=10) +
+  scale_color_gradientn(colors = c("cyan4", "darkorchid4")) +
+  theme_minimal()
+
+ggsave(here("sorted", "wordcloud.png"), height=8, width=15, units="cm", bg = "white")
 ```
