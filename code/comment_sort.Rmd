@@ -11,10 +11,9 @@ library(tidyverse)
 library(here)
 library(janitor)
 #library(datapasta) #for use with vector_paste()
+library(scales) #for prettier ggplot axes
 library(tidytext) #to reorder within a group (for ggplot below)
 library(ggwordcloud) #to create a word cloud
-#install.packages("hunspell")
-#library(hunspell) #for text mining (for word cloud)
 ```
 
 #################
@@ -143,6 +142,7 @@ write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
 
 Create unique .csv files for each category
 ```{r}
+#run a for loop
 for(i in 1:length(comm_sort)){
   if(colnames(comm_sort[i]) %in% vec_names){ #only do this for the category columns
   colname <- colnames(comm_sort[i]) #get category name so you can save unique filenames
@@ -163,14 +163,26 @@ Analyze most popular comment categories by Meeting Location
 ```{r}
 comm_popular <- comm_sort %>%
   rename(full_name=name) %>%
-  mutate(location=replace_na(location,"Comment box")) %>%
+  mutate(location=replace_na(location,"Comment box"),
+         location=ifelse(location %in% c("Comment box","Quinault Tribal Council","Virtual"), "Other location",location)) %>% #merge QIN, virtual, and commment box into "OTHER"
   pivot_longer(cols=c(14:37)) %>%
   filter(value!="") %>%
   group_by(location, name) %>%
   summarize(number_of_comments=n()) %>%
   top_n(n = 4, wt = number_of_comments) %>%
   ungroup() %>%
-  arrange(location, desc(number_of_comments))
+  arrange(location, desc(number_of_comments)) %>%
+  mutate(name = case_when(name == "changing_ocean" ~"Changing Ocean Conditions",
+                          name == "collaborative_coordinated" ~"Collaborative and Coordinated Management", 
+                          name == "compatible_resource_use" ~"Compatible Resource Use",
+                          name == "education_outreach" ~"Education and Outreach",
+                          name == "marine_research" ~"Marine Research",
+                          name == "partnerships_coordinated_management" ~"Partnerships and Coordinated Management",
+                          name == "regulatory_rulemaking" ~"Regulatory/Rulemaking Suggestions",
+                          name == "resource_monitoring_assessment" ~"Resource Monitoring and Assessments",
+                          name == "sanctuary_boundary" ~"Sanctuary Boundaries",
+                          name == "treaty_trust_responsibility" ~"Treaty Trust Responsibility",
+         TRUE ~name))
 
 comm_plot <- comm_popular %>%
   mutate(name = reorder_within(name, number_of_comments, location),
@@ -179,18 +191,19 @@ comm_plot <- comm_popular %>%
 #make it a pretty plot
 ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
   geom_col(show.legend = FALSE) +
-  facet_wrap(~location, scales = "free_y") +
+  facet_wrap(~location, scales = "free") +
   coord_flip() +
   scale_x_reordered() +
-  scale_y_continuous(expand = c(0,0)) +
+  scale_y_continuous(breaks= pretty_breaks(4)) +
   labs(y = "Number of comments",
          x = NULL,
-         title = "Most discussed categories at each public scoping location")
+         title = "Most discussed categories at each public scoping location") +
+  theme_bw()
 
 ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
 ```
 
-Create a wordcloud
+Create a word cloud
 ```{r}
 #make the dataframe wordcloud friendly
 comments <- comm_sort %>%
