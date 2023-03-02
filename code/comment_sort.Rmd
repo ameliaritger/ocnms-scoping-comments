@@ -141,6 +141,24 @@ comm_sort <- comm_all %>%
 write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
 ```
 
+Create unique .csv files for each category
+```{r}
+for(i in 1:length(comm_sort)){
+  if(colnames(comm_sort[i]) %in% vec_names){ #only do this for the category columns
+  colname <- colnames(comm_sort[i]) #get category name so you can save unique filenames
+  
+  comm_category <- comm_sort %>%
+    filter(comm_sort[,i] == "X") %>% #only keep rows where the cell is checked
+    select(1:13) #only keep columns without detailed categorization data
+  
+  write_csv(comm_category, here("sorted", paste(colname, "csv", sep="."))) #save it as a .csv file with a unique name
+  
+  print(colname) #confirm it worked for each iteration
+  }
+}
+```
+
+
 Analyze most popular comment categories by Meeting Location
 ```{r}
 comm_popular <- comm_sort %>%
