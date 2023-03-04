@@ -43,7 +43,7 @@ changing_ocean <- c("climate", "adapt", "long-term", "hypoxi", "acid", "MHW", "O
 #Resource Monitoring and Assessments
 marine_research <- c("intertidal", "tide", "kelp", "seafloor", "deep", "explor", "acoustic", "sound", "research", "nois", "species", "habitat", "ecol", "scien", "biol", "map", "whal", "buoy", "mooring")
 social_science <- c("health", "wellbeing", "econom", "demograph", "resilienc", "household", "justice", "social science", "behav")
-cultural_maritime <- c("maritime", "cultur", "heritage", "archaeolog", "wreck", "ornamental", "sense of place", "regalia", "history")
+cultural_maritime <- c("maritime", "cultur", "heritage", "archaeolog", "wreck", "ornamental", "sense of place", "regalia", "history", "ss pacific", "salvage")
 resource_monitoring_assessment <- vctrs::vec_c(marine_research, social_science, cultural_maritime, "data", "analy", "shar", "The cloud", "archive", "monitor")
 
 #Compatible Resource Use
@@ -278,11 +278,15 @@ comments_top <- comments %>%
 #sort(unique(comments$word)) #check your work
 
 # visualize with word cloud
+set.seed(2019)
 ggplot(data=comments_top, aes(label=word, size=n)) +
-  geom_text_wordcloud(aes(color=n), shape="circle") +
-  scale_size_area(max_size=10) +
+  #geom_text_wordcloud_area(aes(color=n), grid_margin = 10, area_corr_power = 1, eccentricity = 1) +
+  geom_text_wordcloud(aes(color=n), max_steps = 1,
+                           grid_size = 1, eccentricity = 1) +
+  #geom_text_wordcloud(aes(color=n), shape="circle") +
+  scale_size_area(max_size=11) +
   scale_color_gradientn(colors = c("cyan4", "darkorchid4")) +
   theme_minimal()
 
-ggsave(here("sorted", "wordcloud.png"), height=8, width=15, units="cm", bg = "white")
+ggsave(here("sorted", "wordcloud.png"), height=8, width=13, units="cm", bg = "white")
 ```
