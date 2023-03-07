@@ -13,6 +13,7 @@ library(janitor)
 #library(datapasta) #for use with vector_paste()
 library(scales) #for prettier ggplot axes
 library(tidytext) #to reorder within a group (for ggplot below)
+library(ggimage) #use to plot human icon
 library(ggwordcloud) #to create a word cloud
 ```
 
@@ -188,7 +189,7 @@ comm_plot <- comm_popular %>%
   mutate(name = reorder_within(name, number_of_comments, location),
          location = fct_relevel(location, c("Pacific Beach","Quinault Tribal Council","Forks","Neah Bay", "Port Angeles", "Virtual", "Comment box"))) #set order of locations
 
-#make it a pretty plot
+#make it a pretty bar plot
 ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
   geom_col(show.legend = FALSE) +
   facet_wrap(~location, scales = "free") +
@@ -199,6 +200,22 @@ ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) +
          x = NULL,
          title = "Most discussed categories at each public scoping location") +
   theme_bw()
+
+#Make it a geom_image segment plot with human icons
+ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
+  geom_segment(aes(x=name, xend=name, y=0, yend=number_of_comments, color = location)) +
+  #geom_point(aes(color = sd2), size=3, alpha=0.6) +
+  facet_wrap(~location, scales = "free") +
+  geom_image(aes(image="https://upload.wikimedia.org/wikipedia/commons/d/d8/Person_icon_BLACK-01.svg", color = location), size=0.2, by="width", asp=0.6) +
+  coord_flip() +
+  scale_x_reordered() +
+  scale_y_continuous(breaks= pretty_breaks(4), expand=c(0.2,0)) +
+  scale_size_identity() +
+  labs(y = "Number of comments",
+         x = NULL,
+         title = "Most discussed categories at each public scoping location") +
+  theme_bw() +
+  theme(legend.position = "none")
 
 ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
 ```
@@ -214,6 +231,7 @@ comments <- comm_sort %>%
   anti_join(stop_words) %>% #remove stop words. e.g. view(stop_words)
   filter(!str_detect(word, "[:digit:]")) %>% #remove numbers
   mutate(word = case_when(str_detect(word, "washington") ~"washington", #combine words - singular/plural, edit spelling errors where I find them
+                          str_detect(word, "workplace") ~"workplace",
                           str_detect(word, "visit") ~"visitation",
                           str_detect(word, "update") ~"update",
                           str_detect(word, "tribe") ~"tribe",
@@ -234,6 +252,7 @@ comments <- comm_sort %>%
                           str_detect(word, "plan") ~"plan",
                           str_detect(word, "people") ~"people",
                           str_detect(word, "partner") ~"partnership",
+                          str_detect(word, "government") ~"government",
                           str_detect(word, "owner") ~"ownership",
                           str_detect(word, "opportun") ~"opportunity", #overwrite spelling issues
                           str_detect(word, "mooring") ~"mooring",
