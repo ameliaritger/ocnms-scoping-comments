@@ -5,11 +5,12 @@ date: "2023-01-31"
 output: html_document
 ---
 
+# Load packages
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
-library(here)
-library(janitor)
+library(here) #for folder structure
+library(janitor) #for use with clean_names()
 #library(datapasta) #for use with vector_paste()
 library(scales) #for prettier ggplot axes
 library(tidytext) #to reorder within a group (for ggplot below)
@@ -30,7 +31,7 @@ HOW-TO:
 Need to see it in action? Check out how Amelia did it below under "Generate categories and input keywords".
 #############
 
-Generate categories and input keywords
+# Generate categories and input keywords
 ```{r}
 #Partnerships and Coordinated Management
 treaty_trust_responsibility <- c("indigenous", "trib", "makah", "hoh", "quinault", "quileute", "native", "indian", "treaty", "sovereign", "subsist", "harvest")
@@ -79,10 +80,12 @@ operations_admin <- c("staff", "capacity", "infrastructur", "admin", "budget", "
 noaa_implementation <- c("enforc", "violat", "complian", "voluntary", "police", "rule", "permit", "consult")
 ```
 
-Merge the various comment files
+# Download the data and tidy it up 
+
+## Merge the various comment files
 ```{r, message=FALSE}
 #Create a list of all .csv files we have received
-file_names <- list.files(here("data"), pattern = ".csv$", recursive = FALSE, full.names = TRUE)
+file_names <- list.files(here("data"), pattern = ".csv$", recursive = FALSE, full.names = TRUE) #create a list of all .csv files
 
 #Take that list and merge all .csv files into one
 all_merged <- read_csv(file_names, col_names = FALSE) %>%
@@ -93,11 +96,11 @@ all_merged_clean <- all_merged %>%
   filter(is.na(document_id) | str_detect(document_id, 'scoping'), #remove headers
          !is.na(comment)) #remove any rows without a comment
 
-#Delete file_names object because you don't need it anymore
+#Delete file_names from local environment because you don't need it anymore
 rm(file_names)
 ```
 
-Create a dataframe with all comments
+## Create a dataframe with all comments
 ```{r}
 comm <- all_merged_clean %>%
   unite("name", "first_name", "last_name", sep=" ", remove=TRUE, na.rm = FALSE) %>% #combine first and last name columns
@@ -106,8 +109,9 @@ comm <- all_merged_clean %>%
   relocate(c(additional_notes, comment), .after=attachment) #reorder these columns so the for loop below is happy (comments must be at the very end of the dataframe) 
 ```
 
-Run the keyword inputs for each category
+# Categorize comments
 
+## Run the keyword inputs for each category
 ** Make sure you RESTART R and CLEAR OUTPUT before running the following code each time you make changes to the code or re-run the code, as it uses data from your environment! **
 ```{r}
 #Create a list of all the vectors (including their contents)
@@ -129,7 +133,7 @@ for(i in 1:length(vec_list)){
 #use browser() within loop for debug
 ```
 
-Create a column that lists all categories the comment was binned into, and another column that lists the total number of categories the comment was binned into
+## Create a column that lists all categories the comment was binned into, and another column that lists the total number of categories the comment was binned into
 ```{r}
 comm_sort <- comm_all %>%
   mutate(across(changing_ocean:wildlife_disturbance, ~case_when(. != "" ~ cur_column()), .names = 'new_{col}')) %>% #create new columns for each of the categories, where the name of the column is "new + category name" and the contents of the column are filled with the category name
@@ -141,7 +145,9 @@ comm_sort <- comm_all %>%
 write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
 ```
 
-Create unique .csv files for each category
+# Save sorted comments
+
+## Create unique .csv files for each category
 ```{r}
 #run a for loop
 for(i in 1:length(comm_sort)){
@@ -159,20 +165,21 @@ for(i in 1:length(comm_sort)){
 }
 ```
 
+# Post comment-sorting visualization
 
-Analyze most popular comment categories by Meeting Location
+## Analyze most popular comment categories by Meeting Location
 ```{r}
 comm_popular <- comm_sort %>%
-  rename(full_name=name) %>%
+  rename(full_name=name) %>% #rename because pivot_longer uses "name" nomenclature
   mutate(location=replace_na(location,"Comment box"),
          location=ifelse(location %in% c("Comment box","Quinault Tribal Council","Virtual"), "Other location",location)) %>% #merge QIN, virtual, and commment box into "OTHER"
-  pivot_longer(cols=c(14:37)) %>%
-  filter(value!="") %>%
-  group_by(location, name) %>%
-  summarize(number_of_comments=n()) %>%
-  top_n(n = 4, wt = number_of_comments) %>%
+  pivot_longer(cols=c(14:37)) %>% #pivot category columns
+  filter(value!="") %>% #remove rows without an 'X'
+  group_by(location, name) %>% #group by location, then category
+  summarize(number_of_comments=n()) %>% #get total number of comments for each category at each location
+  top_n(n = 4, wt = number_of_comments) %>% #only keep top 4 categories
   ungroup() %>%
-  arrange(location, desc(number_of_comments)) %>%
+  arrange(location, desc(number_of_comments)) %>% #make the table easier to look at by sorting comments by descending popularity
   mutate(name = case_when(name == "changing_ocean" ~"Changing Ocean Conditions",
                           name == "collaborative_coordinated" ~"Collaborative and Coordinated Management", 
                           name == "compatible_resource_use" ~"Compatible Resource Use",
@@ -220,7 +227,7 @@ ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) +
 ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
 ```
 
-Create a word cloud
+## Create a word cloud
 ```{r}
 #make the dataframe wordcloud friendly
 comments <- comm_sort %>%
