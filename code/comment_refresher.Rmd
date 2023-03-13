@@ -1,0 +1,188 @@
+---
+title: "Refresher course for OCNMS 'How to R' workshop with Public Scoping Comments"
+author: "Amelia Ritger"
+date: "2023-03-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **What is R and RStudio?**
+
+The term "`R`" is used to refer to both the programming language and the software that interprets the scripts written using it.
+
+"`RStudio`" is a very popular way to not only write your R scripts but also to interact with the R software. To function correctly, RStudio needs R and therefore both need to be installed on your computer.
+
+## **Navigating around RStudio**
+
+RStudio is divided into 4 "Panes": the **Source** for your scripts and documents (top-left), your **Environment/History** (top-right) which shows all the objects in your working space (Environment) and your command history (History), your **Files/Plots/Packages/Help/Viewer** (bottom-right), and the R **Console** (bottom-left). The placement of these panes and their content can be customized (see menu, Tools -\> Global Options -\> Pane Layout).
+
+The placement of these panes and their content can be customized (see menu, Tools -> Global Options -> Pane Layout). For ease of use, settings such as background color, font color, font size, and zoom level can also be adjusted in this menu (Global Options -> Appearance).
+
+## **What is the tidyverse?**
+
+The tidyverse is a collection of R packages designed for data science that share an underlying design philosophy, grammar, and data structures. Using the tidyverse can help to streamline your data manipulation and visualizations (and make this often-daunting process actually enjoyable).
+
+### Install packages: 
+
+```{r, eval = FALSE}
+#you only need to do this once!
+install.packages("tidyverse", "janitor")
+```
+
+### Load packages:
+
+```{r, message = FALSE, warning = FALSE}
+library(tidyverse)
+library(janitor)
+```
+
+### Start coding!
+
+Using tidyverse, you can string together multiple functions using the pipe operator `%>%`. R will evaluate the current function based off the the results of prior function calls.
+
+Let's first create some completely hypothetical data about the number of pizzas eaten by Amelia and her friends over the past 3 years.
+
+```{r}
+# NOTE: this data is untidy (i.e. in wide format, where each row represents three observations, not one)
+
+pizza_data <- tribble(
+  ~"Name", ~"2020!", ~"2021?", ~"2022.", ~"Favorite", #put quotation marks around years so R treats them as characters, not numbers
+  "Amelia", 25, 20, 16, "pineapple or cheese",
+  "Chris",20, 15, 11, "pepperoni",
+  "Andrew", 18, 17, 10, "mushroom or pepperoni",
+  "Pike", 19, 10, 14, "cheese or pepperoni"
+  )
+```
+
+**clean_names()**: within the janitor package, standardizes all column names by converting to snake_case
+```{r}
+pizza_data <- pizza_data %>%
+  clean_names()
+```
+Variable names that include spaces are a pain to work with. Each time you call a variable name with a space, it must be wrapped in backquotes for R to recognize it. With our data, we used **clean_names()** to convert Name and Favorite to lower case and removed the punctuation from the years. This makes it simpler to code moving forward. **clean_names()** can also handle column names with long strings or special characters.
+
+If you ever want to know more about a function, or need to know what to input to a function, use *?* (if you have the package installed and loaded) or *??* (if you don't have the package installed) before the function name.
+
+Try it now!
+```{r}
+?rename()
+```
+
+I don't like that R added an x before each of the years though. (It's because R doesn't like column names that start with a number). Let's rename those specific columns using **setNames()**:
+```{r}
+#We can also do this with the SetNames() function
+pizza_data <- pizza_data %>%
+  setNames(c("name", "2020", "2021", "2022", "favorite"))
+```
+
+**gather():** transforms data from wide to long format
+```{r}
+tidy_pizza <- pizza_data %>% 
+  gather("2020", "2021", "2022", key = year, value = pizzas_eaten)
+```
+
+**unite():** merge multiple columns into one
+```{r}
+pizza_merged <- tidy_pizza %>%
+  unite("name and year", "name", "year", sep=", ", remove=FALSE)
+```
+
+**arrange():** order observations as specified (default = alphabetical or ascending)
+```{r}
+#arrange by Name, ascending
+ordered_names <- tidy_pizza %>% 
+  arrange(name) # for descending alphabetical order, use "arrange(desc(names))"
+
+#arrange by Pizzas eaten, descending
+ordered_num_pizzas <- tidy_pizza %>% 
+  arrange(-pizzas_eaten) # for ascending order, use "arrange(pizzas_eaten)"
+```
+
+**filter():** select observations within columns
+```{r}
+#only keep observations from Amelia and Chris
+pizza_name <- tidy_pizza %>% 
+  filter(name == "Amelia" | name == "Chris") # "|" tells R to filter any observations that match "Amelia" OR "Chris"
+
+#only keep observations from people who have cheese pizza listed as a favorite
+pizza_favorite <- tidy_pizza %>%
+  filter(str_detect(favorite, "cheese"))
+```
+
+**mutate():** create a new column 
+```{r}
+# use mutate() to create a new column with the average number of pizzas eaten per month
+pizzas_per_month <- tidy_pizza %>% 
+  mutate(pizzas_per_month = pizzas_eaten/12)
+
+# use mutate in conjunction with ifelse, where if the observation in the 'name' column matches "Pike" or "Andrew", report "yes". If not, report "no".
+allergies <- tidy_pizza %>% 
+  mutate(food_allergies = ifelse(name %in% c("Pike", "Andrew"), "yes", "no")) 
+```
+
+**select():** select columns to retain and specify their order
+```{r}
+names_pizzas <- tidy_pizza %>% 
+  select(name, pizzas_eaten, year)
+
+#we can also select based on column number
+names_pizza <- tidy_pizza %>%
+  select(1:3)
+```
+
+**group_by():** groups observations such that data operations are performed at the level of the group
+```{r}
+grouped_names <- tidy_pizza %>% 
+  group_by(name) # notice that nothing appears to change when you view 'grouped_df.' See the next summarize() function for further example.
+```
+
+**summarize():** calculate summary statistics
+```{r}
+pizza_summary <- tidy_pizza %>% 
+  group_by(name) %>% 
+  summarize(
+    avg_pizzas = mean(pizzas_eaten),
+    max_pizza = max(pizzas_eaten),
+    min_pizza = min(pizzas_eaten)
+  )
+```
+
+## Now let's try graphing using our summarized data
+
+**ggplot():** function within the package **ggplot2** that provides helpful commands to create complex plots from data in a data frame. It provides a more programmatic interface for specifying what variables to plot, how they are displayed, and general visual properties. Therefore, we only need minimal changes if the underlying data change or if we decide to change from a bar plot to a scatterplot. This helps in creating publication quality plots with minimal amounts of adjustments and tweaking.
+
+In **ggplot()**, you need to specify:
+1. What data are you using
+2. What is going on the x (and y) axis
+3. What type of graph do you want to make?
+
+Let's start simple with a barplot:
+```{r}
+ggplot(data=pizza_summary, aes(x=name, y=avg_pizzas)) + #notice: in ggplot, we now use + and not %>%
+  geom_col()
+```
+
+Now let's get a lil crazy and customize colors and axis labels:
+```{r}
+ggplot(data=pizza_summary, aes(x=name, y=avg_pizzas)) +
+  geom_col(aes(fill=name)) +
+  labs(x="Name", y="Average number of pizzas eaten")
+```
+
+## Wondering what types of graphs and customizations you can do with ggplot?
+https://r-graph-gallery.com/
+https://www.data-to-viz.com/
+https://posit.co/wp-content/uploads/2022/10/data-visualization-1.pdf
+
+## If we have time: let's run through a basic for loop!
+```{r}
+for(i in 1:10) { # Head of for-loop
+  x1 <- i^2 # Code block
+  print("done with that one, onto the next one!") # Print message that the iteration completed
+  #print(x1) # Print results
+}
+```
+
