@@ -41,11 +41,14 @@ library(janitor)
 
 ### Start coding!
 
-### Create an object or vector
+### Assign values to an object
 ```{r}
 starfish <- 2
 seastar <- "fish"
 starfishes <- c(2,"fish")
+
+#You can also do math with objects
+starfish_math <- starfish + 2
 ```
 
 Using tidyverse, you can string together multiple functions using the pipe operator `%>%`. R will evaluate the current function based off the the results of prior function calls.
