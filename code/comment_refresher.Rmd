@@ -41,6 +41,13 @@ library(janitor)
 
 ### Start coding!
 
+### Create an object or vector
+```{r}
+starfish <- 2
+seastar <- "fish"
+starfishes <- c(2,"fish")
+```
+
 Using tidyverse, you can string together multiple functions using the pipe operator `%>%`. R will evaluate the current function based off the the results of prior function calls.
 
 Let's first create some completely hypothetical data about the number of pizzas eaten by Amelia and her friends over the past 3 years.
@@ -159,15 +166,9 @@ In **ggplot()**, you need to specify:
 2. What is going on the x (and y) axis
 3. What type of graph do you want to make?
 
-Let's start simple with a barplot:
+Let's make a barplot:
 ```{r}
 ggplot(data=pizza_summary, aes(x=name, y=avg_pizzas)) + #notice: in ggplot, we now use + and not %>%
-  geom_col()
-```
-
-Now let's get a lil crazy and customize colors and axis labels:
-```{r}
-ggplot(data=pizza_summary, aes(x=name, y=avg_pizzas)) +
   geom_col(aes(fill=name)) +
   labs(x="Name", y="Average number of pizzas eaten")
 ```
@@ -177,10 +178,11 @@ https://r-graph-gallery.com/
 https://www.data-to-viz.com/
 https://posit.co/wp-content/uploads/2022/10/data-visualization-1.pdf
 
+
 ## If we have time: let's run through a basic for loop!
 ```{r}
 for(i in 1:10) { # Head of for-loop
-  x1 <- i^2 # Code block
+  x1 <- i^2 # Code
   print("done with that one, onto the next one!") # Print message that the iteration completed
   #print(x1) # Print results
 }
