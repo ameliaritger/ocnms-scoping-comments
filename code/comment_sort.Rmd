@@ -16,6 +16,7 @@ library(scales) #for prettier ggplot axes
 library(tidytext) #to reorder within a group (for ggplot below)
 library(ggimage) #use to plot human icon
 library(ggwordcloud) #to create a word cloud
+library(rsvg)
 ```
 
 #################
@@ -83,7 +84,7 @@ noaa_implementation <- c("enforc", "violat", "complian", "voluntary", "police", 
 # Download the data and tidy it up 
 
 ## Merge the various comment files
-```{r, message=FALSE}
+```{r}
 #Create a list of all .csv files we have received
 file_names <- list.files(here("data"), pattern = ".csv$", recursive = FALSE, full.names = TRUE) #create a list of all .csv files
 
