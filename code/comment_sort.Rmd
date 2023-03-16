@@ -37,24 +37,24 @@ Need to see it in action? Check out how Amelia did it below under "Generate cate
 #Partnerships and Coordinated Management
 treaty_trust_responsibility <- c("indigenous", "trib", "makah", "hoh", "quinault", "quileute", "native", "indian", "treaty", "sovereign", "subsist", "harvest")
 collaborative_coordinated <- c("indigenous", "trib", "local", "state", "federal", "international", "canad", "collaborat", "coordinat", "ipc", "govern", "council", "department", "agenc", "navy", "coast guard", "partner", "manage", "jurisdiction", "fisher", "wildlife refuge", "county")
-other_partner <- c("SAC", "advisory council", "MRC", "resource committee", "cooperative", "MOU", "MOA")
+other_partner <- c("SAC", "advisory council", "MRC", "resource committee", "cooperative", "MOU", "MOA", "Feiro")
 partnerships_coordinated_management <- vctrs::vec_c(treaty_trust_responsibility, collaborative_coordinated, other_partner, "relationship")
 
 #Changing Ocean Conditions
 changing_ocean <- c("climate", "adapt", "long-term", "hypoxi", "acid", "MHW", "OA", "HAB", "bloom", "harm", "heat", "stress", "warm", "mitigat", "quality", "sequest", "carbon", "storm")
 
 #Resource Monitoring and Assessments
-marine_research <- c("intertidal", "tide", "kelp", "seafloor", "deep", "explor", "acoustic", "sound", "research", "nois", "species", "habitat", "ecol", "scien", "biol", "map", "whal", "buoy", "mooring")
+marine_research <- c("intertidal", "tide", "kelp", "seafloor", "sea floor", "acoustic", "sound", "research", "nois", "species", "habitat", "ecol", "scien", "biol", "map", "buoy", "mooring", "atlas")
 social_science <- c("health", "wellbeing", "econom", "demograph", "resilienc", "household", "justice", "social science", "behav")
 cultural_maritime <- c("maritime", "cultur", "heritage", "archaeolog", "wreck", "ornamental", "sense of place", "regalia", "history", "ss pacific", "salvage")
-resource_monitoring_assessment <- vctrs::vec_c(marine_research, social_science, cultural_maritime, "data", "analy", "shar", "The cloud", "archive", "monitor")
+resource_monitoring_assessment <- vctrs::vec_c(marine_research, social_science, cultural_maritime, "data", "analy", "The cloud", "archive", "monitor", "study", "studies")
 
 #Compatible Resource Use
 fishing <- c("fish", "crab", "clam", "harvest")
 non_fishing_rec <- c("boat", "motor", "MPWC", "recreat", "touris", "econom", "public access")
 offshore_wind <- c("wind", "turbine", "float", "energy", "renewable")
-other_emergent <- c("energy", "renewable", "optic", "cable", "carbon capture", "desalination", "land use", "development", "deep-sea", "drone")
-compatible_resource_use <- vctrs::vec_c(fishing, non_fishing_rec, offshore_wind, other_emergent, "habitat", "seafloor", "disturb", "oil", "gas", "explor", "trampl", "sink", "ground")
+other_emergent <- c("energy", "renewable", "optic", "cable", "carbon capture", "desalination", "land use", "development", "deep-sea", "drone", "mariculture")
+compatible_resource_use <- vctrs::vec_c(fishing, non_fishing_rec, offshore_wind, other_emergent, "habitat", "seafloor", "disturb", "oil", "gas", "trampl", "sink", "ground", "compatib", "military", "navy", "coast guard")
 
 #Wildlife Disturbance
 wildlife_disturbance <- c("disturb", "flush", "strike", "tangle", "motor", "vessel", "military", "navy", "coast guard", "flight", "plane", "drone", "shipping", "acoustic", "sound", "nois nest", "fireworks", "wildlife", "haul out", "trampl")
@@ -66,12 +66,12 @@ water_quality <- c("spill", "area to be avoided", "ATBA", "marine debris", "tras
 introduced_sp <- c("invasiv", "introduc", "not native", "green crab", "non-indigenous", "not indigenous", "non-native")
 
 #Education and Outreach
-education_program <- c("educat", "student", "teach", "school", "K-12", "K12", "train", "TPD", "learn", "universit", "college", "BWET", "B-WET")
+education_program <- c("student", "teach", "school", "K-12", "K12", "train", "TPD", "universit", "college", "BWET", "B-WET")
 visitor_interpret <- c("visit", "tourism", "interpret", "display", "kiosk", "sign", "park", "Cape Flattery")
 education_outreach <- vctrs::vec_c(education_program, visitor_interpret, "outreach", "volunteer", "media", "citizen science", "speaker", "media", "communit", "extension", "engagement", "public", "steward", "website")
 
 #Regulatory/Rulemaking suggestions
-sanctuary_boundary <- c("boundar", "designat", "expan")
+sanctuary_boundary <- c("boundar", "designat")
 regulatory_rulemaking <- vctrs::vec_c(sanctuary_boundary, "regulat", "rule", "overflight", "military", "navy", "coast guard", "discharge", "cruise", "growler")
 
 #OCNMS Operations and Administration
@@ -178,7 +178,7 @@ comm_popular <- comm_sort %>%
   filter(value!="") %>% #remove rows without an 'X'
   group_by(location, name) %>% #group by location, then category
   summarize(number_of_comments=n()) %>% #get total number of comments for each category at each location
-  top_n(n = 4, wt = number_of_comments) %>% #only keep top 4 categories
+  top_n(n = 3, wt = number_of_comments) %>% #only keep top N categories
   ungroup() %>%
   arrange(location, desc(number_of_comments)) %>% #make the table easier to look at by sorting comments by descending popularity
   mutate(name = case_when(name == "changing_ocean" ~"Changing Ocean Conditions",
@@ -209,10 +209,9 @@ ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) +
          title = "Most discussed categories at each public scoping location") +
   theme_bw()
 
-#Make it a geom_image segment plot with human icons
+#Make it a geom_image segment plot with human icons, for presentation
 ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
   geom_segment(aes(x=name, xend=name, y=0, yend=number_of_comments, color = location)) +
-  #geom_point(aes(color = sd2), size=3, alpha=0.6) +
   facet_wrap(~location, scales = "free") +
   geom_image(aes(image="https://upload.wikimedia.org/wikipedia/commons/d/d8/Person_icon_BLACK-01.svg", color = location), size=0.2, by="width", asp=0.6) +
   coord_flip() +
@@ -307,13 +306,11 @@ comments_top <- comments %>%
 # visualize with word cloud
 set.seed(2019)
 ggplot(data=comments_top, aes(label=word, size=n)) +
-  #geom_text_wordcloud_area(aes(color=n), grid_margin = 10, area_corr_power = 1, eccentricity = 1) +
   geom_text_wordcloud(aes(color=n), max_steps = 1,
                            grid_size = 1, eccentricity = 1) +
-  #geom_text_wordcloud(aes(color=n), shape="circle") +
   scale_size_area(max_size=11) +
-  scale_color_gradientn(colors = c("cyan4", "darkorchid4")) +
-  theme_minimal()
+    scale_color_gradient2(low = "#0072B2", mid = "#661100", high = "#332288", na.value=NA, limits=c(5,70), midpoint = 40) + #force specific color range
+  theme_void()
 
 ggsave(here("sorted", "wordcloud.png"), height=8, width=13, units="cm", bg = "white")
 ```
