@@ -16,4 +16,7 @@ sorted | Sorted comment file(s) and corresponding figure(s)
 
 ## How to use this repository
 
-This repository has the code and folder structure
+This repository has everything you need to get started analyzing Public Scoping comments - except the comments. You will need to make the following changes to the repository to get it working for you:
+1. Download the public scoping comments template from data/template/ and copy/paste your comments and associated details within this file. *Save the file as a .csv.* The code can handle multiple files, if you want to save comments as mutliple .csv files.
+2. Add your public scoping comments .csv file(s) to data/
+3. Go into code/ and find comment_sort.Rmd. 
