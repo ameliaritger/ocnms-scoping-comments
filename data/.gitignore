@@ -1,5 +1,13 @@
 # Ignore everything in this directory
 *
-# Except this file and the template
+
+# Except...
 !.gitignore
-!*/template/scoping_comments_template.xlsx
+!data/
+
+#but do ignore most of the things in this directory
+data/*
+
+# Except...
+!data/template/
+!data/template/*
