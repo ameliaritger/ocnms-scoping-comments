@@ -20,13 +20,11 @@ This repository has everything you need to get started analyzing Public Scoping 
 
 ### You will need to make the following changes to the repository to get it working for you:
 
-1. Download the public scoping comments template from `data/template/` and copy/paste your comments and associated details within this file. **Save the file as a .csv.** The code can handle multiple files, if you want to save comments as multiple .csv files.
+1. Download the public scoping comments template from `data/template/` and copy/paste your comments and associated details within this file. **Copy the text from any attachments and paste that text into the "comment" column**. Then, **save the file as a .csv.** The code can handle multiple files, if you want to save comments as multiple .csv files.
 2. Upload your now-formatted public scoping comments .csv file(s) to `data/`. The code is written to handle multiple .csv files.
-3. Go into `code/` and find `comment_sort.Rmd`. Locate the code chunk labeled "**Generate categories and input keywords**". Everything to the left of `<-` is a category or sub-category, everything to the right and contained within `c()` is (generally) a keyword. Change the categories/subcategories and keywords to your needs. **DO NOT USE SPACES in your category/subcategory names**, instead follow [standard programming naming conventions](https://www.freecodecamp.org/news/programming-naming-conventions-explained/). The code is written in snake_case, but you can change the case to your preference. 
+3. Go into `code/` and find `comment_sort.Rmd`. Locate the code chunk labeled "**Generate categories and input keywords**". Everything to the left of `<-` is a category or sub-category, everything to the right and contained within `c()` is (generally) a keyword. Change the categories/subcategories and keywords to your needs. **DO NOT USE SPACES in your category/subcategory names**, instead follow [standard programming naming conventions](https://www.freecodecamp.org/news/programming-naming-conventions-explained/). The code is written in snake case, but you can change the syntax to your preference. 
 
 ### After following the above steps, the code will generate the following outputs: 
 
-These outputs will be stored in `sorted/`.
-
-1. `comments_sorted.csv` : This is a .csv file containing all your public comments that have now been sorted into your established categories/subcategories using the keywords you provided in step 3 above.
-2. Individual .csv files for each category/subcategory, named using the category/subcategory names you provided in step 3 above.
+1. In `sorted/`: A .csv file called `comments_sorted.csv` containing all your public comments that have now been sorted into your established categories/subcategories using the keywords you provided in step 3 above. There are also columns that show the total number of categories each comment was sorted into, and list the categories each comment was sorted into. 
+2. In `sorted/category-specific`: Individual .csv files for each category/subcategory, named using the category/subcategory names you provided in step 3 above.
