@@ -1,13 +1,6 @@
-# Ignore everything in this directory
-*
-
-# Except...
-!.gitignore
-!data/
-
-#but do ignore most of the things in this directory
+#ignore most of what is in this directory
 data/*
 
 # Except...
+!.gitignore
 !data/template/
-!data/template/*
