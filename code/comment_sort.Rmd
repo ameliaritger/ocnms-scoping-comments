@@ -1,7 +1,7 @@
 ---
-title: "Sorting and Analyzing OCNMS MPR Public Scoping Comments"
+title: "Sorting and Analyzing OCNMS Public Scoping Comments"
 author: "Amelia Ritger"
-date: "2023-01-31"
+date: "2023-03-30"
 output: html_document
 ---
 
@@ -83,7 +83,7 @@ noaa_implementation <- c("enforc", "violat", "complian", "voluntary", "police", 
 # Download the data and tidy it up 
 
 ## Merge the various comment files
-```{r}
+```{r, message = FALSE}
 #Create a list of all .csv files we have received
 file_names <- list.files(here("data"), pattern = ".csv$", recursive = FALSE, full.names = TRUE) #create a list of all .csv files
 
@@ -127,10 +127,7 @@ comm_all <- comm
 for(i in 1:length(vec_list)){
   comm_all <- comm_all %>% #iteratively replace the dataframe for each category
     mutate(!!vec_names[i]:=ifelse(str_detect(comment, paste("(?i)", vec_list[[i]],collapse="|")), "X", "")) #create new column with vector name as the header, fill column with Xs if Comment contains any of the category keywords. (?i) makes str_detect not case sensitive.
-  print(vec_list[i]) #confirm it worked for each iteration
 }
-
-#use browser() within loop for debug
 ```
 
 ## Create a column that lists all categories the comment was binned into, and another column that lists the total number of categories the comment was binned into
@@ -148,7 +145,7 @@ write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
 # Save sorted comments
 
 ## Create unique .csv files for each category
-```{r}
+```{r, warning = FALSE}
 #run a for loop
 for(i in 1:length(comm_sort)){
   if(colnames(comm_sort[i]) %in% vec_names){ #only do this for the category columns
@@ -159,8 +156,6 @@ for(i in 1:length(comm_sort)){
     select(1:13) #only keep columns without detailed categorization data
   
   write_csv(comm_category, here("sorted", "category-specific", paste(colname, "csv", sep="."))) #save it as a .csv file with a unique name
-  
-  print(colname) #confirm it worked for each iteration
   }
 }
 ```
