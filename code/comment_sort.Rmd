@@ -10,12 +10,6 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here) #for folder structure
-library(janitor) #for use with clean_names()
-library(scales) #for prettier ggplot axes
-library(tidytext) #to reorder within a group (for ggplot below)
-library(ggimage) #use to plot human icon
-library(ggwordcloud) #to create a word cloud
-library(rsvg)
 ```
 
 #################

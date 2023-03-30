@@ -10,9 +10,9 @@ This repository is maintained by Hofmann Lab graduate student Amelia Ritger (Git
 
 Folder | Description 
 ---|-----------
-code | Code for cleaning up, categorizing, and visualizing comments
+code | Code for cleaning up and categorizing comments
 data | File(s) containing raw comments as .csv files
-sorted | Sorted comment file(s) and corresponding figure(s)
+sorted | Sorted comment file(s)
 
 ## How to use this repository
 
