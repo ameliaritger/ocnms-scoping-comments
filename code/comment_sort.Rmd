@@ -11,7 +11,6 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here) #for folder structure
 library(janitor) #for use with clean_names()
-#library(datapasta) #for use with vector_paste()
 library(scales) #for prettier ggplot axes
 library(tidytext) #to reorder within a group (for ggplot below)
 library(ggimage) #use to plot human icon
@@ -140,7 +139,7 @@ comm_sort <- comm_all %>%
   mutate(across(changing_ocean:wildlife_disturbance, ~case_when(. != "" ~ cur_column()), .names = 'new_{col}')) %>% #create new columns for each of the categories, where the name of the column is "new + category name" and the contents of the column are filled with the category name
   unite(categories, starts_with('new'), na.rm = TRUE, sep = ', ') %>% #take all of the contents of each row (excluding NAs) of these new columns you just made and merge them into a single column, where each content (aka the category name) is separated by a comma
   mutate(num_categories = ifelse(categories=="", 0, 1 + str_count(categories, pattern = ","))) %>% #create a new column that shows the number of categories that comment was binned into by counting the number of commas and adding 1 (since a comma sorted into one category will have no commas)
-  relocate(c(document_id,date_received,date_posted,attachment,name,affiliation,location,email,comment,notetaker_initials,additional_notes,categories,num_categories), .before=changing_ocean) #reorder columns for easy viewing and to reflect CHNMS scoping comment spreadsheet
+  relocate(c(document_id,date_received,date_posted,attachment,name,affiliation,location,email,comment,notetaker_initials,additional_notes,categories,num_categories), .before=changing_ocean) #reorder columns for easy viewing and to reflect CHNMS 2021 NOI Scoping Comment spreadsheet
 
 #Save this first-pass processed comments dataframe to .csv file
 write_csv(comm_sort, here("sorted", "comments_sorted.csv"))
@@ -159,158 +158,9 @@ for(i in 1:length(comm_sort)){
     filter(comm_sort[,i] == "X") %>% #only keep rows where the cell is checked
     select(1:13) #only keep columns without detailed categorization data
   
-  write_csv(comm_category, here("sorted", paste(colname, "csv", sep="."))) #save it as a .csv file with a unique name
+  write_csv(comm_category, here("sorted", "category-specific", paste(colname, "csv", sep="."))) #save it as a .csv file with a unique name
   
   print(colname) #confirm it worked for each iteration
   }
 }
-```
-
-# Post comment-sorting visualization
-
-## Analyze most popular comment categories by Meeting Location
-```{r}
-comm_popular <- comm_sort %>%
-  rename(full_name=name) %>% #rename because pivot_longer uses "name" nomenclature
-  mutate(location=replace_na(location,"Comment box"),
-         location=ifelse(location %in% c("Comment box","Quinault Tribal Council","Virtual"), "Other location",location)) %>% #merge QIN, virtual, and commment box into "OTHER"
-  pivot_longer(cols=c(14:37)) %>% #pivot category columns
-  filter(value!="") %>% #remove rows without an 'X'
-  group_by(location, name) %>% #group by location, then category
-  summarize(number_of_comments=n()) %>% #get total number of comments for each category at each location
-  top_n(n = 3, wt = number_of_comments) %>% #only keep top N categories
-  ungroup() %>%
-  arrange(location, desc(number_of_comments)) %>% #make the table easier to look at by sorting comments by descending popularity
-  mutate(name = case_when(name == "changing_ocean" ~"Changing Ocean Conditions",
-                          name == "collaborative_coordinated" ~"Collaborative and Coordinated Management", 
-                          name == "compatible_resource_use" ~"Compatible Resource Use",
-                          name == "education_outreach" ~"Education and Outreach",
-                          name == "marine_research" ~"Marine Research",
-                          name == "partnerships_coordinated_management" ~"Partnerships and Coordinated Management",
-                          name == "regulatory_rulemaking" ~"Regulatory/Rulemaking Suggestions",
-                          name == "resource_monitoring_assessment" ~"Resource Monitoring and Assessments",
-                          name == "sanctuary_boundary" ~"Sanctuary Boundaries",
-                          name == "treaty_trust_responsibility" ~"Treaty Trust Responsibility",
-         TRUE ~name))
-
-comm_plot <- comm_popular %>%
-  mutate(name = reorder_within(name, number_of_comments, location),
-         location = fct_relevel(location, c("Pacific Beach","Quinault Tribal Council","Forks","Neah Bay", "Port Angeles", "Virtual", "Comment box"))) #set order of locations
-
-#make it a pretty bar plot
-ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
-  geom_col(show.legend = FALSE) +
-  facet_wrap(~location, scales = "free") +
-  coord_flip() +
-  scale_x_reordered() +
-  scale_y_continuous(breaks= pretty_breaks(4)) +
-  labs(y = "Number of comments",
-         x = NULL,
-         title = "Most discussed categories at each public scoping location") +
-  theme_bw()
-
-#Make it a geom_image segment plot with human icons, for presentation
-ggplot(comm_plot, aes(x=name, y=number_of_comments, fill=location)) + 
-  geom_segment(aes(x=name, xend=name, y=0, yend=number_of_comments, color = location)) +
-  facet_wrap(~location, scales = "free") +
-  geom_image(aes(image="https://upload.wikimedia.org/wikipedia/commons/d/d8/Person_icon_BLACK-01.svg", color = location), size=0.2, by="width", asp=0.6) +
-  coord_flip() +
-  scale_x_reordered() +
-  scale_y_continuous(breaks= pretty_breaks(4), expand=c(0.2,0)) +
-  scale_size_identity() +
-  labs(y = "Number of comments",
-         x = NULL,
-         title = "Most discussed categories at each public scoping location") +
-  theme_bw() +
-  theme(legend.position = "none")
-
-ggsave(here("sorted", "popular_comments.png"), height=15, width=30, units="cm", bg = "white")
-```
-
-## Create a word cloud
-```{r}
-#make the dataframe wordcloud friendly
-comments <- comm_sort %>%
-  select(comment) %>% #remove all columns except comments
-  unnest_tokens(word, comment, to_lower = TRUE) %>% #give every word its own row
-  mutate(word = ifelse(str_detect(word, "angeles"), "port angeles", ifelse(str_detect(word, "neah"), "neah bay", word))) %>%
-  drop_na() %>% #remove NA values
-  anti_join(stop_words) %>% #remove stop words. e.g. view(stop_words)
-  filter(!str_detect(word, "[:digit:]")) %>% #remove numbers
-  mutate(word = case_when(str_detect(word, "washington") ~"washington", #combine words - singular/plural, edit spelling errors where I find them
-                          str_detect(word, "workplace") ~"workplace",
-                          str_detect(word, "visit") ~"visitation",
-                          str_detect(word, "update") ~"update",
-                          str_detect(word, "tribe") ~"tribe",
-                          str_detect(word, "touri") ~"tourism",
-                          str_detect(word, "student") ~"student",
-                          str_detect(word, "sanctuar") ~"sanctuary",
-                          str_detect(word, "represent") ~"representation",
-                          str_detect(word, "relationship") ~"relationship",
-                          str_detect(word, "recommend") ~"recommendation",
-                          str_detect(word, "program") ~"program",
-                          str_detect(word, "project") ~"project",
-                          str_detect(word, "protect") ~"protect",
-                          str_detect(word, "report") ~"report",
-                          str_detect(word, "requir") ~"requirement",
-                          str_detect(word, "resource") ~"resource",
-                          str_detect(word, "unif") ~"unify",
-                          str_detect(word, "school") ~"school",
-                          str_detect(word, "plan") ~"plan",
-                          str_detect(word, "people") ~"people",
-                          str_detect(word, "partner") ~"partnership",
-                          str_detect(word, "government") ~"government",
-                          str_detect(word, "owner") ~"ownership",
-                          str_detect(word, "opportun") ~"opportunity", #overwrite spelling issues
-                          str_detect(word, "mooring") ~"mooring",
-                          str_detect(word, "monitor") ~"monitoring",
-                          str_detect(word, "model") ~"model",
-                          str_detect(word, "manag") ~"management", #overwrite spelling issues
-                          str_detect(word, "location") ~"location",
-                          str_detect(word, "level") ~"level",
-                          str_detect(word, "learn") ~"learn",
-                          str_detect(word, "kiosk") ~"kiosks",
-                          str_detect(word, "issue") ~"issue",
-                          str_detect(word, "interaction") ~"interaction",
-                          str_detect(word, "impact") ~"impact",
-                          str_detect(word, "harvest") ~"harvest",
-                          str_detect(word, "habitat") ~"habitat",
-                          str_detect(word, "guide") ~"guide",
-                          str_detect(word, "department") ~"department",
-                          str_detect(word, "concern") ~"concern",
-                          str_detect(word, "comment") ~"comment",
-                          str_detect(word, "collab") ~"collaboration", #overwrite spelling issues
-                          str_detect(word, "agenc") ~"agency",
-                          str_detect(word, "wind") ~"wind",
-                          str_detect(word, "whale") ~"whale",
-                          str_detect(word, "water") ~"water",
-                          str_detect(word, "vital") ~"vital",
-                          str_detect(word, "underst") ~"understanding", #overwrite spelling issues
-                          str_detect(word, "threat") ~"threats",
-                          str_detect(word, "support") ~"support",
-                          str_detect(word, "resilienc") ~"resilience",
-                          str_detect(word, "priorit") ~"priority", #overwrite spelling issues
-                          str_detect(word, "interpret") ~"interpretation", #overwrite spelling issues
-                          str_detect(word, "indian") ~"indian",
-                          str_detect(word, "engage") ~"engagement", #overwrite spelling issues
-                          TRUE~word))
-    
-comments_top <- comments %>%
-  count(word) %>% #count number of instances each word was mentioned
-  arrange(-n) %>% #decreasing order
-  filter(!word=="e.g") %>% #remove this word from wordcloud
-  head(50) #top n words
-
-#sort(unique(comments$word)) #check your work
-
-# visualize with word cloud
-set.seed(2019)
-ggplot(data=comments_top, aes(label=word, size=n)) +
-  geom_text_wordcloud(aes(color=n), max_steps = 1,
-                           grid_size = 1, eccentricity = 1) +
-  scale_size_area(max_size=11) +
-    scale_color_gradient2(low = "#0072B2", mid = "#661100", high = "#332288", na.value=NA, limits=c(5,70), midpoint = 40) + #force specific color range
-  theme_void()
-
-ggsave(here("sorted", "wordcloud.png"), height=8, width=13, units="cm", bg = "white")
 ```

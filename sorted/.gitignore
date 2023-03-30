@@ -1,4 +1,7 @@
-# Ignore everything in this directory
-*
-# Except this file
+#ignore most of what is in this directory
+sorted/*
+sorted/category-specific/*
+
+# Except...
 !.gitignore
+!sorted/category-specific/
