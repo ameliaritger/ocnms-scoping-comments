@@ -87,8 +87,9 @@ all_merged <- read_csv(file_names, col_names = FALSE) %>%
 
 #Clean up the dataframe you have just created
 all_merged_clean <- all_merged %>%
-  filter(is.na(document_id) | str_detect(document_id, 'scoping'), #remove headers
-         !is.na(comment)) #remove any rows without a comment
+  filter(!is.na(comment), #remove any rows without a comment
+         is.na(date_received) | !str_detect(date_received, 'received'), #remove headers
+         is.na(first_name) | !str_detect(first_name, 'Leave blank if')) #remove headers
 
 #Delete file_names from local environment because you don't need it anymore
 rm(file_names)
