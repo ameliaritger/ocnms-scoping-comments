@@ -1,3 +1,11 @@
+#install.packages("readxl", "tidyverse", "janitor")
+library(readxl)
+library(tidyverse)
+library(janitor)
+
+#start with a clean environment 
+rm(list=ls())
+
 pathname <- "./data/" #name the file pathway (i.e., where in the directory the files are stored)
 file_names <- list.files(path = pathname, 
                          full.names = F,
